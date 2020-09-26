@@ -1,0 +1,80 @@
+module JoiningDA where
+
+template Engineer with
+    name: Party
+    employer: Maybe[Party]
+  where
+    signatory name
+    -- observer company
+
+    -- key name: Party
+    -- maintainer key
+
+    -- nonconsuming choice ApplyForPosition: ContractId Application with
+    --     company: Party
+    --   controller name
+    --     do
+    --         archive self
+            -- create Application name company
+          
+
+data Application = Application with
+    candidate: Party
+    organization: Party
+
+
+template InterviewOffer with
+    candidate: Party
+    organization: Party
+    timeSlot: Text
+  where
+    signatory organization
+
+template JobApplication with
+    candidate: Party
+    organization: Party
+  where
+    signatory candidate
+
+    controller organization can
+        FirstRoundOffer: ContractId InterviewOffer
+          do
+            create InterviewOffer
+              with
+                candidate = candidate
+                organization = organization
+                timeSlot = "ASAP!"
+
+template InterviewAgreement with
+    candidate: Party
+    organization: Party
+    timeSlot: Text
+  where
+    signatory organization
+
+-- template InterviewAvailability with
+--     candidate: Party
+--     organization: Party
+--   where
+--     signatory candidate
+
+--  template InterviewConfirmation with
+--     candidate: Party
+--     organization: Party
+--   where
+--     signatory organization  
+
+
+---------------------     
+
+test = scenario do
+  p <- getParty "Bill"
+  digitalAsset <- getParty "DigitalAsset"
+  interviewOffer <- p `submit` do
+    create JobApplication
+        with
+            candidate = p
+            organization = digitalAsset
+
+  digitalAsset `submit` do
+    exercise interviewOffer FirstRoundOffer 

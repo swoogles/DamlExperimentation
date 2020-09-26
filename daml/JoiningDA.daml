@@ -1,21 +1,12 @@
 module JoiningDA where
+import DA.List
+
 
 template Engineer with
     name: Party
     employer: Maybe[Party]
   where
     signatory name
-    -- observer company
-
-    -- key name: Party
-    -- maintainer key
-
-    -- nonconsuming choice ApplyForPosition: ContractId Application with
-    --     company: Party
-    --   controller name
-    --     do
-    --         archive self
-            -- create Application name company
           
 
 data Application = Application with
@@ -23,12 +14,6 @@ data Application = Application with
     organization: Party
 
 
-template InterviewOffer with
-    candidate: Party
-    organization: Party
-    timeSlot: Text
-  where
-    signatory organization
 
 template JobApplication with
     candidate: Party
@@ -43,38 +28,103 @@ template JobApplication with
               with
                 candidate = candidate
                 organization = organization
-                timeSlot = "ASAP!"
+                timeSlots = ["2020 September 18", " 2020 September 21" ]
+
+template InterviewOffer with
+    candidate: Party
+    organization: Party
+    timeSlots: [Text]
+  where
+    signatory organization
+
+    controller candidate can
+        ScheduleFirstInterview: ContractId InterviewAgreement
+          do
+            create InterviewAgreement with
+                candidate = candidate
+                organization = organization
+                time = DA.List.head timeSlots
 
 template InterviewAgreement with
     candidate: Party
     organization: Party
-    timeSlot: Text
+    time: Text
+  where
+    signatory organization, candidate
+
+    controller organization can
+      HostInterview: ContractId FirstRoundInterview
+        do
+          create FirstRoundInterview with
+            candidate = candidate
+            organization = organization
+            time = time
+ 
+
+template FirstRoundInterview with
+    candidate: Party
+    organization: Party
+    time: Text
+  where
+    signatory candidate, organization
+
+    controller organization can
+      InviteBackForSecondRound: ContractId TechnicalInterviewOffer
+        do
+          create TechnicalInterviewOffer with
+            candidate = candidate
+            organization = organization
+            timeSlots = ["2020 September 25", " 2020 September 29" ]
+                  
+
+template TechnicalInterviewOffer with
+    candidate: Party
+    organization: Party
+    timeSlots: [Text]
   where
     signatory organization
 
--- template InterviewAvailability with
---     candidate: Party
---     organization: Party
---   where
---     signatory candidate
+    controller candidate can
+        ScheduleTechnicalInterview: ContractId TechnicalInterviewAgreement
+          do
+            create TechnicalInterviewAgreement with
+                candidate = candidate
+                organization = organization
+                time = DA.List.head timeSlots
 
---  template InterviewConfirmation with
---     candidate: Party
---     organization: Party
---   where
---     signatory organization  
+template TechnicalInterviewAgreement with
+    candidate: Party
+    organization: Party
+    time: Text
+  where
+    signatory organization, candidate
 
-
+    -- controller organization can
+    --   HostInterview: ContractId FirstRoundInterview
+    --     do
+    --       create FirstRoundInterview with
+    --         candidate = candidate
+    --         organization = organization
+    --         time = time
 ---------------------     
 
 test = scenario do
-  p <- getParty "Bill"
+  bill <- getParty "Bill"
   digitalAsset <- getParty "DigitalAsset"
-  interviewOffer <- p `submit` do
+  submittedApplication <- bill `submit` do
     create JobApplication
         with
-            candidate = p
+            candidate = bill
             organization = digitalAsset
 
+  interviewOffer <- digitalAsset `submit` do
+    exercise submittedApplication FirstRoundOffer
+
+  interviewAgreement <- bill `submit` do
+    exercise interviewOffer ScheduleFirstInterview
+
+  firstRoundInterview <- digitalAsset `submit` do
+    exercise interviewAgreement HostInterview
+    
   digitalAsset `submit` do
-    exercise interviewOffer FirstRoundOffer 
+    exercise firstRoundInterview InviteBackForSecondRound

@@ -1,19 +1,21 @@
 module JoiningDA where
 import DA.List
+import DA.Time
+import DA.Date
 
 
-template Engineer with
-    name: Party
-    employer: Maybe[Party]
-  where
-    signatory name
+-- template Engineer with
+--     name: Party
+--     employer: Maybe[Party]
+--   where
+--     signatory name
           
 
-data Application = Application with
-    candidate: Party
-    organization: Party
+-- data Application = Application with
+--     candidate: Party
+--     organization: Party
 
-
+data JobDenial = JobDenial
 
 template JobApplication with
     candidate: Party
@@ -28,12 +30,21 @@ template JobApplication with
               with
                 candidate = candidate
                 organization = organization
-                timeSlots = ["2020 September 18", " 2020 September 21" ]
+                timeSlots = [date 2020 Sep 18, date 2020 Sep 21 ]
+
+        -- Denial: JobDenial
+        --   do
+        --     JobDenial
+
+
+
+
+
 
 template InterviewOffer with
     candidate: Party
     organization: Party
-    timeSlots: [Text]
+    timeSlots: [Date]
   where
     signatory organization
 
@@ -45,10 +56,13 @@ template InterviewOffer with
                 organization = organization
                 time = DA.List.head timeSlots
 
+
+
+
 template InterviewAgreement with
     candidate: Party
     organization: Party
-    time: Text
+    time: Date
   where
     signatory organization, candidate
 
@@ -64,7 +78,7 @@ template InterviewAgreement with
 template FirstRoundInterview with
     candidate: Party
     organization: Party
-    time: Text
+    time: Date
   where
     signatory candidate, organization
 
@@ -74,13 +88,13 @@ template FirstRoundInterview with
           create TechnicalInterviewOffer with
             candidate = candidate
             organization = organization
-            timeSlots = ["2020 September 25", " 2020 September 29" ]
+            timeSlots = [date 2020 Sep 25, date 2020 Sep 29]
                   
 
 template TechnicalInterviewOffer with
     candidate: Party
     organization: Party
-    timeSlots: [Text]
+    timeSlots: [Date]
   where
     signatory organization
 
@@ -95,7 +109,7 @@ template TechnicalInterviewOffer with
 template TechnicalInterviewAgreement with
     candidate: Party
     organization: Party
-    time: Text
+    time: Date
   where
     signatory organization, candidate
 
@@ -111,6 +125,7 @@ template TechnicalInterviewAgreement with
 test = scenario do
   bill <- getParty "Bill"
   digitalAsset <- getParty "DigitalAsset"
+
   submittedApplication <- bill `submit` do
     create JobApplication
         with
